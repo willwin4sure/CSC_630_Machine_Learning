@@ -34,28 +34,30 @@ def convert_fen_to_encoding(fen_string):
 class ChessDataset(torch.utils.data.Dataset):
     '''Chess dataset'''
 
-    def __init__(self, file_path):
-        df = pd.read_csv(file_path)
-        df['Encoding'] = df['FEN'].apply(convert_fen_to_encoding)
+    def __init__(self, file_path, encoded=False):
+        if not encoded:
+            df = pd.read_csv(file_path)
+            df['Encoding'] = df['FEN'].apply(convert_fen_to_encoding)
 
-        def filter_mates(eval):
-            if '#' in str(eval):
-                if '+' in str(eval):
-                    return 20000
-                if '-' in str(eval):
-                    return -20000
-                else:
-                    return 0
-            return int(eval)
+            def filter_mates(eval):
+                if '#' in str(eval):
+                    if '+' in str(eval):
+                        return 20000
+                    if '-' in str(eval):
+                        return -20000
+                    else:
+                        return 0
+                return int(eval)
 
-        df['EvaluationFiltered'] = df['Evaluation'].apply(filter_mates)
+            df['EvaluationFiltered'] = df['Evaluation'].apply(filter_mates)
+
+            df.to_csv('data/smallerChessDataEncoded.csv', index=False)
+        
+        else:
+            df = pd.read_csv(file_path)
 
         self.input = torch.Tensor(df['Encoding'].apply(lambda x: [int(char) for char in str(x)]))
         self.output = torch.Tensor(df['EvaluationFiltered'])
-
-        if torch.cuda.is_available():
-            self.input = self.input.cuda()
-            self.output = self.output.cuda()
 
         self.output = torch.minimum(self.output, torch.quantile(self.output, 0.90))
         self.output = torch.maximum(self.output, torch.quantile(self.output, 0.10))
@@ -64,6 +66,14 @@ class ChessDataset(torch.utils.data.Dataset):
         self.output = self.output / torch.std(self.output)
 
         self.output = self.output.reshape((-1,1))
+
+        input(self.input.size())
+        input(self.output.size())
+        
+        if torch.cuda.is_available():
+            self.input = self.input.cuda()
+            self.output = self.output.cuda()
+
         input(self.output[:25])
 
     def __getitem__(self, index):
@@ -75,17 +85,16 @@ class ChessDataset(torch.utils.data.Dataset):
 def main():
     '''Trains a neural network model that takes in an input layer of 518 nodes, three hidden layers of 128 nodes, and an output layer with a single node, with RELU activation'''
 
-    dataset = ChessDataset('data/smallerChessData.csv')
+    dataset = ChessDataset('data/chessDataEncoded.csv', encoded=True)
 
     train_len = int(len(dataset)*0.8) 
     test_len = len(dataset) - train_len
 
     data_train, data_test = torch.utils.data.random_split(dataset, [train_len, test_len])
 
-
     # Load data
-    train_loader = torch.utils.data.DataLoader(data_train, batch_size=256, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(data_test, batch_size=256, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(data_train, batch_size=512, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(data_test, batch_size=512, shuffle=True)
 
     # Create model
     model = torch.nn.Sequential(
@@ -98,7 +107,8 @@ def main():
         torch.nn.Linear(128, 1)
     )
     # Loss and optimization functions
-    
+    if torch.cuda.is_available():
+        model = model.cuda()
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
     model.train()
 
