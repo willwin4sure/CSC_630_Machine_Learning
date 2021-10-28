@@ -95,9 +95,7 @@ class ChessDataset(torch.utils.data.Dataset):
         return len(self.input)
 
 def main():
-    '''Trains a neural network model that takes in an input layer of 518 nodes, three hidden layers of 128 nodes, and an output layer with a single node, with RELU activation'''
-
-    dataset = ChessDataset('data/smallerChessDataEncoded.csv', encoded=True)
+    dataset = ChessDataset('data/smallChessData.csv', encoded=False, save_path='data/smallChessDataEncoded.csv')
 
     train_len = int(len(dataset)*0.8) 
     test_len = len(dataset) - train_len
@@ -157,9 +155,47 @@ def main():
                 avg_loss = sum_loss / len(test_loader)
                 print(f'Average Test Loss Epoch {epoch}: {avg_loss}')
 
-    # Save model
-    torch.save(model.state_dict(), 'model.pt')
-    
+        if epoch % 50 == 0:
+            # Save model
+            torch.save(model.state_dict(), f'model_{epoch}.pt')
 
-# if __name__ == "__main__":
-#     main()
+def test_models():
+    dataset = ChessDataset('data/testChessDataEncoded.csv', encoded=True)
+
+    train_len = 1
+    test_len = len(dataset) - train_len
+
+    _, data_test = torch.utils.data.random_split(dataset, [train_len, test_len])
+
+    # Load data
+    test_loader = torch.utils.data.DataLoader(data_test, batch_size=512, shuffle=True)
+
+    model = torch.nn.Sequential(
+        torch.nn.Linear(518, 128),
+        torch.nn.ReLU(),
+        torch.nn.Linear(128, 128),
+        torch.nn.ReLU(),
+        torch.nn.Linear(128, 128),
+        torch.nn.ReLU(),
+        torch.nn.Linear(128, 1)
+    )
+
+    model.load_state_dict(torch.load('model_100.pt'))
+
+    if torch.cuda.is_available():
+        model = model.cuda()
+
+    model.eval()
+    with torch.no_grad():
+        loss_fn = torch.nn.MSELoss()
+        sum_loss = 0
+        for _,elem in tenumerate(test_loader):
+            output = model(elem['input'])
+            loss = loss_fn(output, elem['output'])
+            sum_loss += loss.item()
+        avg_loss = sum_loss / len(test_loader)
+        print(f'Average Test Loss: {avg_loss}')
+
+if __name__ == "__main__":
+    main()
+    # test_models()
