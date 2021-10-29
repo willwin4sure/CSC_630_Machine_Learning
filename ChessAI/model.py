@@ -1,11 +1,13 @@
 import torch
+from torch.serialization import save
 from tqdm.contrib import tenumerate
 import numpy as np
 import pandas as pd
 import chess
+import matplotlib.pyplot as plt
 
 def convert_fen_to_encoding(fen_string):
-    one_hot_dict = {'P': '10100000', 'N': '10010000', 'B': '10001000', 'R': '10000100', 'Q': '10000010', 'K': '10000001', 'p': '01100000', 'n': '01010000', 'b': '01001000', 'r': '01000100', 'q': '01000010', 'k': '01000001', '.': '00000000'}
+    one_hot_dict = {'P': '100000000000', 'N': '010000000000', 'B': '001000000000', 'R': '000100000000', 'Q': '000010000000', 'K': '000001000000', 'p': '000000100000', 'n': '000000010000', 'b': '000000001000', 'r': '000000000100', 'q': '000000000010', 'k': '000000000001', '.': '000000000000'}
     fen_string_props = fen_string.split(' ')
     rows = chess.Board(fen_string).__str__().split('\n')
     squares_encoding = []
@@ -55,7 +57,7 @@ class ChessDataset(torch.utils.data.Dataset):
 
             row_encodings = np.array(row_encodings)
             columns_list = ['Evaluation']
-            for i in range(518):
+            for i in range(774):
                 columns_list.append('Encoding_' + str(i))
             df_encoded = pd.DataFrame(row_encodings, columns=columns_list)
 
@@ -71,8 +73,10 @@ class ChessDataset(torch.utils.data.Dataset):
         # input(self.input)
         self.output = torch.Tensor(df_encoded['Evaluation'])
 
-        self.output = torch.minimum(self.output, torch.quantile(self.output, 0.90))
-        self.output = torch.maximum(self.output, torch.quantile(self.output, 0.10))
+        # self.output = torch.minimum(self.output, torch.quantile(self.output, 0.88))
+        # self.output = torch.maximum(self.output, torch.quantile(self.output, 0.10))
+
+        self.output = 1/(1+10 ** (self.output / (-400)))
 
         self.output = self.output - torch.mean(self.output)
         self.output = self.output / torch.std(self.output)
@@ -95,7 +99,7 @@ class ChessDataset(torch.utils.data.Dataset):
         return len(self.input)
 
 def main():
-    dataset = ChessDataset('data/smallChessData.csv', encoded=False, save_path='data/smallChessDataEncoded.csv')
+    dataset = ChessDataset('data/smallChessData2Encoded.csv', encoded=True)
 
     train_len = int(len(dataset)*0.8) 
     test_len = len(dataset) - train_len
@@ -108,13 +112,15 @@ def main():
 
     # Create model
     model = torch.nn.Sequential(
-        torch.nn.Linear(518, 128),
-        torch.nn.ReLU(),
-        torch.nn.Linear(128, 128),
-        torch.nn.ReLU(),
-        torch.nn.Linear(128, 128),
-        torch.nn.ReLU(),
-        torch.nn.Linear(128, 1)
+        torch.nn.Linear(774, 2048),
+        torch.nn.ELU(),
+        torch.nn.Dropout(0.2),
+        torch.nn.Linear(2048, 2048),
+        torch.nn.ELU(),
+        torch.nn.Dropout(0.2),
+        torch.nn.Linear(2048, 2048),
+        torch.nn.ELU(),
+        torch.nn.Linear(2048, 1),
     )
     # Loss and optimization functions
     if torch.cuda.is_available():
@@ -123,7 +129,7 @@ def main():
     model.train()
 
     # Train model
-    for epoch in range(1, 501):
+    for epoch in range(1, 101):
         sum_loss = 0
         for _, elem in tenumerate(train_loader):
             # Forward pass
@@ -143,59 +149,47 @@ def main():
         avg_loss = sum_loss / len(train_loader)
         print(f'Average Loss Epoch {epoch}: {avg_loss}')
 
-        if epoch % 5 == 0:
-            # Test model
-            model.eval()
-            with torch.no_grad():
-                sum_loss = 0
-                for _,elem in tenumerate(test_loader):
-                    output = model(elem['input'])
-                    loss = loss_fn(output, elem['output'])
-                    sum_loss += loss.item()
-                avg_loss = sum_loss / len(test_loader)
-                print(f'Average Test Loss Epoch {epoch}: {avg_loss}')
+        # Test model
+        model.eval()
+        with torch.no_grad():
+            sum_loss = 0
+            for _,elem in tenumerate(test_loader):
+                output = model(elem['input'])
+                loss = loss_fn(output, elem['output'])
+                sum_loss += loss.item()
+            avg_loss = sum_loss / len(test_loader)
+            print(f'Average Test Loss Epoch {epoch}: {avg_loss}')
 
-        if epoch % 50 == 0:
+        if epoch % 10 == 0:
             # Save model
             torch.save(model.state_dict(), f'model_{epoch}.pt')
 
 def test_models():
-    dataset = ChessDataset('data/testChessDataEncoded.csv', encoded=True)
+    dataset = ChessDataset('data/smallChessDataEncoded.csv', encoded=True)
 
-    train_len = 1
-    test_len = len(dataset) - train_len
-
-    _, data_test = torch.utils.data.random_split(dataset, [train_len, test_len])
-
-    # Load data
-    test_loader = torch.utils.data.DataLoader(data_test, batch_size=512, shuffle=True)
+    
 
     model = torch.nn.Sequential(
-        torch.nn.Linear(518, 128),
-        torch.nn.ReLU(),
-        torch.nn.Linear(128, 128),
-        torch.nn.ReLU(),
-        torch.nn.Linear(128, 128),
-        torch.nn.ReLU(),
-        torch.nn.Linear(128, 1)
+        torch.nn.Linear(774, 2048),
+        torch.nn.ELU(),
+        torch.nn.Dropout(0.2),
+        torch.nn.Linear(2048, 2048),
+        torch.nn.ELU(),
+        torch.nn.Dropout(0.2),
+        torch.nn.Linear(2048, 2048),
+        torch.nn.ELU(),
+        torch.nn.Linear(2048, 1),
     )
 
-    model.load_state_dict(torch.load('model_100.pt'))
+    model.load_state_dict(torch.load('models/smallChessData2_512sizeModels/model_70.pt'))
 
     if torch.cuda.is_available():
         model = model.cuda()
 
     model.eval()
     with torch.no_grad():
-        loss_fn = torch.nn.MSELoss()
-        sum_loss = 0
-        for _,elem in tenumerate(test_loader):
-            output = model(elem['input'])
-            loss = loss_fn(output, elem['output'])
-            sum_loss += loss.item()
-        avg_loss = sum_loss / len(test_loader)
-        print(f'Average Test Loss: {avg_loss}')
+        model()
 
 if __name__ == "__main__":
-    main()
-    # test_models()
+    # main()
+    test_models()

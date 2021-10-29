@@ -17,26 +17,41 @@ class TestingBot:
                     print(f'Found in {book} book.')
                     return reader.weighted_choice(board_hash).move
 
-        print("Random Move")
-        moves = list(board.legal_moves)
-        return moves[int(len(moves) * random.random())]
+        depth = 3
+        best_value = -1000000
+        for move in board.legal_moves:
+            board.push(move)
+            value = self.tree_search(board, depth, -1000000, 1000000)
+            board.pop()
+            
+            if value > best_value:
+                best_value = value
+                best_move = move
+
+        return best_move
+
+        # print("Random Move")
+        # moves = list(board.legal_moves)
+        # return moves[int(len(moves) * random.random())]
 
     def tree_search(self, board, depth, alpha, beta):
         if depth == 0 or board.is_game_over():
-            return self.evaluate(board)
+            return self.material_evaluate(board)
 
         best_value = -1000000
         for move in board.legal_moves:
             board.push(move)
             value = -self.tree_search(board, depth - 1, -beta, -alpha)
             board.pop()
-            best_value = max(best_value, value)
-            alpha = max(alpha, value)
+            if value > best_value:
+                best_value = value
+            if value > alpha:
+                alpha = value
             if alpha >= beta:
                 break
         return best_value
 
-    def evaluate(self, board):
+    def material_evaluate(self, board):
         if board.is_checkmate():
             return -1000000 if board.turn == self.color else 1000000
 
@@ -55,9 +70,9 @@ class TestingBot:
 
         for piece, color in all_pieces:
             if color == chess.WHITE:
-                material += board.pieces(piece, color) * value_pieces[piece]
+                material += len(board.pieces(piece, color)) * value_pieces[piece]
             if color == chess.BLACK:
-                material -= board.pieces(piece, color) * value_pieces[piece]
+                material -= len(board.pieces(piece, color)) * value_pieces[piece]
 
         return material
         
