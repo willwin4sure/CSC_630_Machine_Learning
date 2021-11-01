@@ -99,7 +99,7 @@ class ChessDataset(torch.utils.data.Dataset):
         return len(self.input)
 
 def main():
-    dataset = ChessDataset('data/smallChessData2Encoded.csv', encoded=True)
+    dataset = ChessDataset('data/smallChessData3White.csv', encoded=False, save_path='data/smallChessData3WhiteEncoded.csv')
 
     train_len = int(len(dataset)*0.8) 
     test_len = len(dataset) - train_len
@@ -167,8 +167,6 @@ def main():
 def test_models():
     dataset = ChessDataset('data/smallChessDataEncoded.csv', encoded=True)
 
-    
-
     model = torch.nn.Sequential(
         torch.nn.Linear(774, 2048),
         torch.nn.ELU(),
@@ -191,5 +189,5 @@ def test_models():
         model()
 
 if __name__ == "__main__":
-    # main()
-    test_models()
+    main()
+    # test_models()
