@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import chess
 import matplotlib.pyplot as plt
+import math
+import time
 
 def convert_fen_to_encoding(fen_string):
     one_hot_dict = {'P': '100000000000', 'N': '010000000000', 'B': '001000000000', 'R': '000100000000', 'Q': '000010000000', 'K': '000001000000', 'p': '000000100000', 'n': '000000010000', 'b': '000000001000', 'r': '000000000100', 'q': '000000000010', 'k': '000000000001', '.': '000000000000'}
@@ -43,6 +45,13 @@ def filter_mates(eval):
             return 0
     return int(eval)
 
+def convert_to_pawn_advantage(output):
+    output *= 0.2250
+    output += 0.5385
+    output = max(output, 1e-10)
+    output = min(output, 1-1e-10)
+    return 400 * math.log10(output/(1-output))
+
 class ChessDataset(torch.utils.data.Dataset):
     '''Chess dataset'''
 
@@ -78,8 +87,12 @@ class ChessDataset(torch.utils.data.Dataset):
 
         self.output = 1/(1+10 ** (self.output / (-400)))
 
+        # input(torch.mean(self.output))
+        # input(torch.std(self.output))
+
         self.output = self.output - torch.mean(self.output)
         self.output = self.output / torch.std(self.output)
+
 
         self.output = self.output.reshape((-1,1))
 
@@ -99,7 +112,7 @@ class ChessDataset(torch.utils.data.Dataset):
         return len(self.input)
 
 def main():
-    dataset = ChessDataset('data/smallChessData2Encoded.csv', encoded=True)
+    dataset = ChessDataset('data/smallerChessDataEncoded.csv', encoded=True)
 
     train_len = int(len(dataset)*0.8) 
     test_len = len(dataset) - train_len
@@ -164,10 +177,10 @@ def main():
             # Save model
             torch.save(model.state_dict(), f'model_{epoch}.pt')
 
-def test_models():
-    dataset = ChessDataset('data/smallChessDataEncoded.csv', encoded=True)
+def predict_model(fen):
+    encoding = convert_fen_to_encoding(fen)
 
-    
+    # dataset = ChessDataset('data/smallerChessDataEncoded.csv', encoded=True)
 
     model = torch.nn.Sequential(
         torch.nn.Linear(774, 2048),
@@ -181,15 +194,27 @@ def test_models():
         torch.nn.Linear(2048, 1),
     )
 
-    model.load_state_dict(torch.load('models/smallChessData2_512sizeModels/model_70.pt'))
+    model.load_state_dict(torch.load('model_70.pt', map_location='cpu'))
 
     if torch.cuda.is_available():
         model = model.cuda()
 
     model.eval()
+
     with torch.no_grad():
-        model()
+        output = model(torch.unsqueeze(torch.Tensor(encoding), dim=0))
+        print(output.item(), convert_to_pawn_advantage(output.item()))
+
+    return convert_to_pawn_advantage(output.item())
+
+    # with torch.no_grad():
+    #     for n in range(15):
+    #         output = model(torch.unsqueeze(dataset[n]['input'], dim=0))
+    #         print(output.item(), convert_to_pawn_advantage(output.item()))
+    #         print(dataset[n]['output'].item(), convert_to_pawn_advantage(dataset[n]['output'].item()))
+    #         print('-----')
+        
 
 if __name__ == "__main__":
     # main()
-    test_models()
+    predict_model('1rb2rk1/4bppQ/4p2p/pp2n3/8/2NBN3/PPP3PP/R4R1K b - - 1 20')
