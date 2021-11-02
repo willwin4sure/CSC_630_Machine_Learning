@@ -64,7 +64,7 @@ def predict_model(fen):
         torch.nn.Linear(2048, 1),
     )
 
-    model.load_state_dict(torch.load('model_70.pt', map_location='cpu'))
+    model.load_state_dict(torch.load('models/more_models/model_70.pt', map_location='cpu'))
 
     if torch.cuda.is_available():
         model = model.cuda()
@@ -72,7 +72,10 @@ def predict_model(fen):
     model.eval()
 
     with torch.no_grad():
-        output = model(torch.unsqueeze(torch.Tensor(encoding), dim=0))
+        encoding = torch.Tensor(encoding)
+        if torch.cuda.is_available():
+            encoding = encoding.cuda()
+        output = model(torch.unsqueeze(encoding, dim=0))
         # print(output.item(), convert_to_pawn_advantage(output.item()))
 
     return convert_to_pawn_advantage(output.item())

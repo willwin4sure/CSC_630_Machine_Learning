@@ -200,7 +200,10 @@ def predict_model(fen):
     model.eval()
 
     with torch.no_grad():
-        output = model(torch.unsqueeze(torch.Tensor(encoding), dim=0))
+        encoding = torch.Tensor(encoding)
+        if torch.cuda.is_available():
+            encoding = encoding.cuda()
+        output = model(torch.unsqueeze(encoding, dim=0))
         print(output.item(), convert_to_pawn_advantage(output.item()))
 
     return convert_to_pawn_advantage(output.item())
@@ -215,4 +218,4 @@ def predict_model(fen):
 
 if __name__ == "__main__":
     # main()
-    predict_model('1rb2rk1/4bppQ/4p2p/pp2n3/8/2NBN3/PPP3PP/R4R1K b - - 1 20')
+    predict_model('r1b1k2r/pppp1ppp/8/6B1/2QNn3/P1P5/2P2PPP/R3K2R b KQkq - 0 11')

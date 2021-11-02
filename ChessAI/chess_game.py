@@ -11,7 +11,7 @@ if __name__ == "__main__":
     then pushing the move onto the board and saving the current board state to an svg file called current_board.svg,
     and ending the loop whenever a player gets checkmated.'''
 
-    board = chess.Board('r1b2rk1/1p2bpp1/p3pn1p/4N3/4P3/2NBq3/PPP3PP/R2Q1R1K w - - 1 15')
+    board = chess.Board()
     player1 = player_bot.PlayerBot(chess.WHITE)
     player2 = testing_bot.TestingBot(chess.BLACK)
     while not (board.is_checkmate() or board.is_stalemate() or board.is_insufficient_material() or board.is_seventyfive_moves()):
