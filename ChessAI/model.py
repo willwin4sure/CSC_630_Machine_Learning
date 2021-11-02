@@ -123,19 +123,19 @@ def main():
     # Create model
     model = torch.nn.Sequential(
         torch.nn.Linear(774, 1024),
-        torch.nn.RELU(),
+        torch.nn.ReLU(),
         torch.nn.Dropout(0.5),
         torch.nn.Linear(1024, 1024),
-        torch.nn.RELU(),
+        torch.nn.ReLU(),
         torch.nn.Dropout(0.5),
         torch.nn.Linear(1024, 1024),
-        torch.nn.RELU(),
+        torch.nn.ReLU(),
         torch.nn.Dropout(0.5),
         torch.nn.Linear(1024, 1024),
-        torch.nn.RELU(),
+        torch.nn.ReLU(),
         torch.nn.Dropout(0.5),
         torch.nn.Linear(1024, 1024),
-        torch.nn.RELU(),
+        torch.nn.ReLU(),
         torch.nn.Linear(1024, 1),
     )
     # Loss and optimization functions
