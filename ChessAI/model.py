@@ -91,7 +91,6 @@ class ChessDataset(torch.utils.data.Dataset):
         self.output = self.output - torch.mean(self.output)
         self.output = self.output / torch.std(self.output)
 
-
         self.output = self.output.reshape((-1,1))
 
         # input(self.input.size())
@@ -110,7 +109,7 @@ class ChessDataset(torch.utils.data.Dataset):
         return len(self.input)
 
 def main():
-    dataset = ChessDataset('data/smallChessData3White.csv', encoded=False, save_path='data/smallChessData3WhiteEncoded.csv')
+    dataset = ChessDataset('data/smallChessData3WhiteEncoded.csv', encoded=True)
 
     train_len = int(len(dataset)*0.8) 
     test_len = len(dataset) - train_len
@@ -124,19 +123,19 @@ def main():
     # Create model
     model = torch.nn.Sequential(
         torch.nn.Linear(774, 1024),
-        torch.nn.ELU(),
-        torch.nn.Dropout(0.2),
+        torch.nn.RELU(),
+        torch.nn.Dropout(0.5),
         torch.nn.Linear(1024, 1024),
-        torch.nn.ELU(),
-        torch.nn.Dropout(0.2),
+        torch.nn.RELU(),
+        torch.nn.Dropout(0.5),
         torch.nn.Linear(1024, 1024),
-        torch.nn.ELU(),
-        torch.nn.Dropout(0.2),
+        torch.nn.RELU(),
+        torch.nn.Dropout(0.5),
         torch.nn.Linear(1024, 1024),
-        torch.nn.ELU(),
-        torch.nn.Dropout(0.2),
+        torch.nn.RELU(),
+        torch.nn.Dropout(0.5),
         torch.nn.Linear(1024, 1024),
-        torch.nn.ELU(),
+        torch.nn.RELU(),
         torch.nn.Linear(1024, 1),
     )
     # Loss and optimization functions
@@ -158,6 +157,9 @@ def main():
             # Backward pass
             optimizer.zero_grad()
             loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
+
             optimizer.step()
 
             # if batch_idx % 100 == 0:
