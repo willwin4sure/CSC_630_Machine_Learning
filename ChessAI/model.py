@@ -60,7 +60,7 @@ class ChessDataset(torch.utils.data.Dataset):
             df = pd.read_csv(file_path)
             row_encodings = []
             for _, row in df.iterrows():
-                row_encoding = [filter_mates(row['Evaluation'])]
+                row_encoding = [1/(1+10**(filter_mates(row['Evaluation'])/(-400)))]
                 row_encoding = row_encoding + convert_fen_to_encoding(row['FEN'])
                 row_encodings.append(row_encoding)
 
@@ -84,8 +84,6 @@ class ChessDataset(torch.utils.data.Dataset):
 
         # self.output = torch.minimum(self.output, torch.quantile(self.output, 0.88))
         # self.output = torch.maximum(self.output, torch.quantile(self.output, 0.10))
-
-        self.output = 1/(1+10 ** (self.output / (-400)))
 
         # input(torch.mean(self.output))
         # input(torch.std(self.output))
@@ -125,15 +123,21 @@ def main():
 
     # Create model
     model = torch.nn.Sequential(
-        torch.nn.Linear(774, 2048),
+        torch.nn.Linear(774, 1024),
         torch.nn.ELU(),
         torch.nn.Dropout(0.2),
-        torch.nn.Linear(2048, 2048),
+        torch.nn.Linear(1024, 1024),
         torch.nn.ELU(),
         torch.nn.Dropout(0.2),
-        torch.nn.Linear(2048, 2048),
+        torch.nn.Linear(1024, 1024),
         torch.nn.ELU(),
-        torch.nn.Linear(2048, 1),
+        torch.nn.Dropout(0.2),
+        torch.nn.Linear(1024, 1024),
+        torch.nn.ELU(),
+        torch.nn.Dropout(0.2),
+        torch.nn.Linear(1024, 1024),
+        torch.nn.ELU(),
+        torch.nn.Linear(1024, 1),
     )
     # Loss and optimization functions
     if torch.cuda.is_available():
@@ -217,5 +221,5 @@ def predict_model(fen):
         
 
 if __name__ == "__main__":
-    # main()
-    predict_model('r1b1k2r/pppp1ppp/8/6B1/2QNn3/P1P5/2P2PPP/R3K2R b KQkq - 0 11')
+    main()
+    # predict_model('r1b1k2r/pppp1ppp/8/6B1/2QNn3/P1P5/2P2PPP/R3K2R b KQkq - 0 11')
