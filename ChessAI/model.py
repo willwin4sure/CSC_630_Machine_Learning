@@ -9,12 +9,24 @@ import math
 import time
 
 def convert_fen_to_encoding(fen_string):
-    one_hot_dict = {'P': '100000000000', 'N': '010000000000', 'B': '001000000000', 'R': '000100000000', 'Q': '000010000000', 'K': '000001000000', 'p': '000000100000', 'n': '000000010000', 'b': '000000001000', 'r': '000000000100', 'q': '000000000010', 'k': '000000000001', '.': '000000000000'}
+    one_hot_dict = {'P': [1,0,0,0,0,0,0,0,0,0,0,0], 
+                    'N': [0,1,0,0,0,0,0,0,0,0,0,0], 
+                    'B': [0,0,1,0,0,0,0,0,0,0,0,0], 
+                    'R': [0,0,0,1,0,0,0,0,0,0,0,0], 
+                    'Q': [0,0,0,0,1,0,0,0,0,0,0,0], 
+                    'K': [0,0,0,0,0,1,0,0,0,0,0,0], 
+                    'p': [0,0,0,0,0,0,1,0,0,0,0,0], 
+                    'n': [0,0,0,0,0,0,0,1,0,0,0,0], 
+                    'b': [0,0,0,0,0,0,0,0,1,0,0,0], 
+                    'r': [0,0,0,0,0,0,0,0,0,1,0,0], 
+                    'q': [0,0,0,0,0,0,0,0,0,0,1,0], 
+                    'k': [0,0,0,0,0,0,0,0,0,0,0,1], 
+                    '.': [0,0,0,0,0,0,0,0,0,0,0,0]}
     fen_string_props = fen_string.split(' ')
     rows = chess.Board(fen_string).__str__().split('\n')
     squares_encoding = []
     for row in rows:
-        squares_encoding.append(list(map(lambda x: [int(char) for char in one_hot_dict[x]], row.split(' '))))
+        squares_encoding += list(map(lambda x: one_hot_dict[x], row.split(' ')))
 
     if fen_string_props[1] == 'w':
         turn = [1, 0]
@@ -26,12 +38,11 @@ def convert_fen_to_encoding(fen_string):
     castle_privileges = fen_string_props[2]
     castle_privileges_encoding = [int(x in castle_privileges) for x in ['K', 'Q', 'k', 'q']]
 
-    row_encoding = []
-    for row in squares_encoding:
-        for square in row:
-            row_encoding = row_encoding + square
+    flattened_squares_encoding = []
+    for square in squares_encoding:
+        flattened_squares_encoding += square
 
-    full_encoding = row_encoding + turn + castle_privileges_encoding
+    full_encoding = flattened_squares_encoding + turn + castle_privileges_encoding
     
     return full_encoding
 
