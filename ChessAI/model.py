@@ -96,8 +96,8 @@ class ChessDataset(torch.utils.data.Dataset):
         # self.output = torch.minimum(self.output, torch.quantile(self.output, 0.88))
         # self.output = torch.maximum(self.output, torch.quantile(self.output, 0.10))
 
-        # input(torch.mean(self.output))
-        # input(torch.std(self.output))
+        input(torch.mean(self.output))
+        input(torch.std(self.output))
 
         self.output = self.output - torch.mean(self.output)
         self.output = self.output / torch.std(self.output)
@@ -111,7 +111,7 @@ class ChessDataset(torch.utils.data.Dataset):
             self.input = self.input.cuda()
             self.output = self.output.cuda()
 
-        # input(self.output[:25])
+        input(self.output[:25])
 
     def __getitem__(self, index):
         return {'input': self.input[index], 'output': self.output[index]}
@@ -120,7 +120,7 @@ class ChessDataset(torch.utils.data.Dataset):
         return len(self.input)
 
 def main():
-    dataset = ChessDataset('data/smallChessData3WhiteEncoded.csv', encoded=True)
+    dataset = ChessDataset('data/smallChessDataEncoded.csv', encoded=True)
 
     train_len = int(len(dataset)*0.8) 
     test_len = len(dataset) - train_len
@@ -133,32 +133,27 @@ def main():
 
     # Create model
     model = torch.nn.Sequential(
-        torch.nn.Linear(774, 1024),
-        torch.nn.ReLU(),
+        torch.nn.Linear(774, 2048),
+        torch.nn.ELU(),
         torch.nn.Dropout(0.5),
-        torch.nn.Linear(1024, 1024),
-        torch.nn.ReLU(),
+        torch.nn.Linear(2048, 2048),
+        torch.nn.ELU(),
         torch.nn.Dropout(0.5),
-        torch.nn.Linear(1024, 1024),
-        torch.nn.ReLU(),
+        torch.nn.Linear(2048, 2048),
+        torch.nn.ELU(),
         torch.nn.Dropout(0.5),
-        torch.nn.Linear(1024, 1024),
-        torch.nn.ReLU(),
-        torch.nn.Dropout(0.5),
-        torch.nn.Linear(1024, 1024),
-        torch.nn.ReLU(),
-        torch.nn.Linear(1024, 1),
+        torch.nn.Linear(2048, 1),
     )
     # Loss and optimization functions
     if torch.cuda.is_available():
         model = model.cuda()
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
-    model.train()
 
     # Train model
     for epoch in range(1, 101):
         sum_loss = 0
         for _, elem in tenumerate(train_loader):
+            model.train()
             # Forward pass
             output = model(elem['input'])
             loss_fn = torch.nn.MSELoss()
@@ -192,7 +187,7 @@ def main():
 
         if epoch % 10 == 0:
             # Save model
-            torch.save(model.state_dict(), f'model_{epoch}.pt')
+            torch.save(model.state_dict(), f'models/models11032021/model_{epoch}.pt')
 
 def predict_model(fen):
     encoding = convert_fen_to_encoding(fen)
@@ -200,12 +195,13 @@ def predict_model(fen):
     model = torch.nn.Sequential(
         torch.nn.Linear(774, 2048),
         torch.nn.ELU(),
-        torch.nn.Dropout(0.2),
+        torch.nn.Dropout(0.5),
         torch.nn.Linear(2048, 2048),
         torch.nn.ELU(),
-        torch.nn.Dropout(0.2),
+        torch.nn.Dropout(0.5),
         torch.nn.Linear(2048, 2048),
         torch.nn.ELU(),
+        torch.nn.Dropout(0.5),
         torch.nn.Linear(2048, 1),
     )
 

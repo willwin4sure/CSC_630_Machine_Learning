@@ -4,6 +4,7 @@ import chess.svg
 import player_bot
 import random_bot
 import testing_bot
+import testing_bot_conv
 
 if __name__ == "__main__":
     '''Runs a while loop to play out the chess game between two of the bots, player bot and random bot,
@@ -13,7 +14,7 @@ if __name__ == "__main__":
 
     board = chess.Board()
     player1 = player_bot.PlayerBot(chess.WHITE)
-    player2 = testing_bot.TestingBot(chess.BLACK)
+    player2 = testing_bot_conv.ConvTestingBot(chess.BLACK)
     while not (board.is_checkmate() or board.is_stalemate() or board.is_insufficient_material() or board.is_seventyfive_moves()):
         if board.turn == chess.WHITE:
             player_move = player1.get_move(board)

@@ -5,6 +5,8 @@ import numpy as np
 import torch
 import math
 
+#cython
+
 def convert_fen_to_encoding(fen_string):
     one_hot_dict = {'P': '100000000000', 'N': '010000000000', 'B': '001000000000', 'R': '000100000000', 'Q': '000010000000', 'K': '000001000000', 'p': '000000100000', 'n': '000000010000', 'b': '000000001000', 'r': '000000000100', 'q': '000000000010', 'k': '000000000001', '.': '000000000000'}
     fen_string_props = fen_string.split(' ')
@@ -107,7 +109,14 @@ class TestingBot:
                 value = predict_model(fen)
                 if (value > best_anti_value):
                     best_anti_value = value
+
+                if (best_anti_value > best_value):
+                    board.pop()
+                    break
                 board.pop()
+
+            print(move)
+            print(best_anti_value)
 
             if best_anti_value < best_value:
                 best_value = best_anti_value
@@ -115,6 +124,7 @@ class TestingBot:
             board.pop()
 
         print(best_move)
+        print(best_value)
         return best_move
 
         # depth = 3
