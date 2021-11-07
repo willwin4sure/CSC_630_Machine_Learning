@@ -1,4 +1,4 @@
-# Weekly Check-in 1 by William Yue
+# Weekly Check-in 3 by William Yue
 
 * What work have you done?
 
