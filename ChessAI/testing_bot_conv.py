@@ -3,8 +3,80 @@ import chess.polyglot
 import random
 import numpy as np
 import torch
+import torch.nn as nn
 import math
+import time
 from math import log10
+
+
+class SE_Block(nn.Module):
+    def __init__(self, filters, se_channels):
+        super().__init__()
+        self.filters = filters
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(filters, se_channels),
+            nn.ReLU(inplace=True),
+            nn.Linear(se_channels, 2*filters),
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, 2*c, 1, 1)
+        w = y[:, 0:self.filters, :, :]
+        b = y[:, self.filters:2*self.filters, :, :]
+        w = torch.sigmoid(w)
+        return x * w.expand_as(x) + b.expand_as(x)
+
+class ResidualBlock(nn.Module):
+    def __init__(self, filters, se_channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(filters, filters, 3, padding=1, stride=1)
+        self.bn1 = nn.BatchNorm2d(filters)
+        self.conv2 = nn.Conv2d(filters, filters, 3, padding=1, stride=1)
+        self.bn2 = nn.BatchNorm2d(filters)
+        self.se = SE_Block(filters, se_channels)
+    
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.se(out)
+        out = out + x
+        out = torch.relu(out)
+        return out
+
+class CarissaNet(nn.Module):
+    def __init__(self, blocks=20, filters=256, se_channels=32):
+        super().__init__()
+        self.conv1 = nn.Conv2d(29, filters, 3, padding=1, stride=1)
+        self.bn1 = nn.BatchNorm2d(filters)
+        
+        self.residual_blocks = nn.ModuleList([ResidualBlock(filters, se_channels) for _ in range(blocks)])
+
+        self.conv2 = nn.Conv2d(filters, 32, 3, padding=1, stride=1)
+        self.bn2 = nn.BatchNorm2d(32)
+        self.fc = nn.Sequential(
+            nn.Linear(32*8*8, 128),
+            nn.ReLU(inplace=True),
+            nn.Linear(128, 1),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.bn1(out)
+
+        for block in self.residual_blocks:
+            out = block(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = out.reshape((out.size()[0], -1))
+        out = self.fc(out)
+        return out
 
 def pawn_advantage_to_prob(adv):
     if adv < -1000:
@@ -12,10 +84,10 @@ def pawn_advantage_to_prob(adv):
     return 1/(1+10**(adv/(-4)))
 
 def prob_to_pawn_advantage(prob):
-    if prob < 1e-100:
-        return -1000000
-    if prob > 1-1e-100:
-        return 1000000
+    if prob < 1e-10:
+        return -100000
+    if prob > 1-1e-10:
+        return 100000
     return 4*log10(prob/(1-prob))
 
 piece_to_layer = {
@@ -65,93 +137,67 @@ def convert_to_bitboard(fen):
 
     # print(list(boards))
 
-    return boards
+    return np.array(boards)
 
-piece_to_material = {
-    'R': 5,
-    'N': 3,
-    'B': 3,
-    'Q': 9,
-    'K': 0,
-    'P': 1,
-    'p': -1,
-    'k': 0,
-    'q': -9,
-    'b': -3,
-    'n': -3,
-    'r': -5
-}
+# piece_to_material = {
+#     'R': 5,
+#     'N': 3,
+#     'B': 3,
+#     'Q': 9,
+#     'K': 0,
+#     'P': 1,
+#     'p': -1,
+#     'k': 0,
+#     'q': -9,
+#     'b': -3,
+#     'n': -3,
+#     'r': -5
+# }
 
 # should carry material eval down the tree
 
-def material_eval(board):
-    pieces = board.piece_map()
-    return sum([piece_to_material[piece.symbol()] for piece in pieces.values()])
+# def material_eval(board):
+#     pieces = board.piece_map()
+#     return sum([piece_to_material[piece.symbol()] for piece in pieces.values()])
 
-def predict_model(fen):
-    board = chess.Board(fen)
+model = CarissaNet(blocks=10, filters=128)
 
+sdict = torch.load('model_40_leela.pt', map_location='cpu')
+for key in list(sdict.keys()):
+    if key.startswith("module."):
+        sdict[key[7:]] = sdict.pop(key)
+
+model.load_state_dict(sdict)
+
+if torch.cuda.is_available():
+    model = model.cuda()
+
+model.eval()
+
+def predict_model(board):
     if board.is_stalemate() or board.is_seventyfive_moves() or board.is_insufficient_material() or board.is_fivefold_repetition():
         return 0
     
     if board.is_checkmate():
         if board.turn == chess.WHITE:
-            return prob_to_pawn_advantage(0)
+            return 1e10
         else:
-            return prob_to_pawn_advantage(1)
+            return -1e10
 
-    encoding = convert_to_bitboard(fen)
-
-    model = torch.nn.Sequential(
-        torch.nn.Conv2d(29, 32, kernel_size=3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm2d(32),
-        torch.nn.Conv2d(32, 32, kernel_size=3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm2d(32),
-        torch.nn.Conv2d(32, 64, kernel_size=3, stride=2),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm2d(64),
-        torch.nn.Conv2d(64, 64, kernel_size=3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm2d(64),
-        torch.nn.Conv2d(64, 64, kernel_size=3, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm2d(64),
-        torch.nn.Conv2d(64, 128, kernel_size=3, stride=2),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm2d(128),
-        torch.nn.Conv2d(128, 128, kernel_size=2, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm2d(128),
-        torch.nn.Conv2d(128, 128, kernel_size=2, padding=1),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm2d(128),
-        torch.nn.Conv2d(128, 256, kernel_size=2, stride=2),
-        torch.nn.Flatten(),
-        torch.nn.Dropout(.5),
-        torch.nn.Linear(256, 1)
-    )
-
-    model.load_state_dict(torch.load('conv_model_20.pt', map_location='cpu'))
-
-    if torch.cuda.is_available():
-        model = model.cuda()
-
-    model.eval()
-
+    encoding = convert_to_bitboard(board.fen())
     with torch.no_grad():
         encoding = torch.Tensor(encoding)
         if torch.cuda.is_available():
             encoding = encoding.cuda()
         output = model(torch.unsqueeze(encoding, dim=0))
         # print(output.item(), convert_to_pawn_advantage(output.item()))
+    
 
-    return 50*(prob_to_pawn_advantage(output.item())+material_eval(board))
+    return output.item()
 
 def tree_search(board, depth, alpha, beta, maximizing_player):
     if depth == 0 or board.is_game_over():
-        return predict_model(board.fen())
+        return predict_model(board)
 
     if maximizing_player:
         value = -1000000
@@ -190,13 +236,13 @@ class ConvTestingBot:
 
         print('Computing move.')
 
-        depth = 2
+        depth = 1
         best_value = 1000000
         for move in board.legal_moves:
             board.push(move)
             value = tree_search(board, depth, -1000000, 1000000, True)
             board.pop()
-            print(move, value)
+            # print(move, 100*prob_to_pawn_advantage(value))
 
             if value < best_value:
                 best_value = value
@@ -205,3 +251,7 @@ class ConvTestingBot:
         print(best_move, best_value)
         return best_move
 
+if __name__ == '__main__':
+    board = chess.Board('2q3k1/p2n1ppp/4pn2/1pb5/4PB2/P2N1PP1/1PrN3P/2R2QK1 w - - 4 26')
+    a1 = time.time()
+    print(predict_model(board))
