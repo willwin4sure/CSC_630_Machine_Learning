@@ -191,7 +191,6 @@ def predict_model(board):
             encoding = encoding.cuda()
         output = model(torch.unsqueeze(encoding, dim=0))
         # print(output.item(), convert_to_pawn_advantage(output.item()))
-    
 
     return output.item()
 
@@ -253,5 +252,4 @@ class ConvTestingBot:
 
 if __name__ == '__main__':
     board = chess.Board('2q3k1/p2n1ppp/4pn2/1pb5/4PB2/P2N1PP1/1PrN3P/2R2QK1 w - - 4 26')
-    a1 = time.time()
     print(predict_model(board))
