@@ -303,7 +303,7 @@ I document what I do in markdown cells before I do it in the actual code cells, 
     <img src="images/customdataset.PNG" width="800">
 </p>
 
-The work that I've shown above combined with my efforts described in my midterm reflection show that I've done a lot of work in telling stories with data in an organized fashion. Similar to all the other learning objectives, I consult online documentation (or in the case of the PyTorch tutorial, I am ltierally working off of documentation) or friends to help me solve any problems I encounter. Given that I had no experience at the start of the class with telling stories about data, I have progressed greatly in this learning objective.
+The work that I've shown above combined with my efforts described in my midterm reflection show that I've done a lot of work in telling stories with data in an organized fashion. Similar to all the other learning objectives, I consult online documentation (or in the case of the PyTorch tutorial, I am literally working off of documentation) or friends to help me solve any problems I encounter. Given that I had no experience at the start of the class with telling stories about data, I have progressed greatly in this learning objective.
 
 * **Total:** 11.8/12
 
