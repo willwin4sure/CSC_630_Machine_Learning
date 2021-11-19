@@ -254,45 +254,66 @@ Overall, I'd say my writing is pretty well organized and documented, and I provi
 ## Learning Objective 4: I can tell stories with data, both by discussing my process in shaping/manipulating/modeling it and the choices made to do so, and through making arguments about what my findings say about the world.
 
 * **Organization:** 3.0/3
-* **Volume of Work:** 2.8/3
+* **Volume of Work:** 3.0/3
 * **Analysis/Documentation:** 2.8/3
 * **Progress** 3.0/3
 
-Most of my storytelling occurs in the following three Jupyter notebooks:
+Most of my storytelling occurs in the following five Jupyter notebooks:
 * [The Pydata Stack Lab](https://github.com/willwin4sure/CSC_630_Machine_Learning/blob/main/pyData/PyData_Stack_Lab.ipynb)
 * [Sentiment 140 Dataset Preprocessing](https://github.com/willwin4sure/CSC_630_Machine_Learning/blob/main/BERT/sentiment140_dataset.ipynb)
 * [LSTM Model for Predicting Myers Briggs Personality Types](https://github.com/bharnav/CSC630-Machine-Learning/blob/main/Predicting%20Myers%20Briggs%20Types/models/myers-briggs-data_0-lstm.ipynb), with *Arnav Bhatka*
+* [Exploring and Pre-Processing the Chess Dataset](https://github.com/willwin4sure/CSC_630_Machine_Learning/blob/main/ChessAI/exploring_prepocessing_dataset.ipynb)
+* [PyTorch Tutorial](https://github.com/willwin4sure/CSC_630_Machine_Learning/blob/main/Learn_PyTorch/PyTorch%20Tutorial.ipynb)
 
+I already discussed the first three in my [Midterm Reflection](https://github.com/willwin4sure/CSC_630_Machine_Learning/blob/main/Reflections/midterm_reflection.md), so I will focus on the bottom two here.
 
+In my [Exploring and Pre-Processing the Chess Dataset](https://github.com/willwin4sure/CSC_630_Machine_Learning/blob/main/ChessAI/exploring_prepocessing_dataset.ipynb) Jupyter notebook, I tell a story about examining this chess dataset and understanding each component: all aspects of the FEN strings and also how the evaluations are stored: I talked through all of my reasoning and exploration:
 
-* **Total:** 11.6/12
+<p align="center">
+    <img src="images/fenstrings.PNG" width="800">
+</p>
+<p align="center">
+    <img src="images/boardstatecastling.PNG" width="800">
+</p>
+<p align="center">
+    <img src="images/enpassant.PNG" width="800">
+</p>
+
+I also documented my thought processes in using `random_evals.csv`, as it gives the model more information about what moves really suck, and also in not using `tactic_evals.csv`, since we want the model to have a better high-level heuristic view of which positions are good, instead of focusing on sharp tactical combinations: these sorts of tactics would be better handled by the tree search portion of the bot:
+
+<p align="center">
+    <img src="images/exploringchess.PNG" width="800">
+</p>
+
+In the image above, I also talked about how I plotted the evaluations in a histogram and why the data seemed symmetric and nice enough for me to work with, especially after I apply the sigmoid function of converting pawn advantage to win probability (this is good, since +7 and +10 are quite close in evaluation, both very winning for white, while -1 and +2 are much much more different, so the sigmoid accounts for this.)
+
+In my [PyTorch Tutorial](https://github.com/willwin4sure/CSC_630_Machine_Learning/blob/main/Learn_PyTorch/PyTorch%20Tutorial.ipynb) Jupyter notebook, I go through all my though processes of learning how PyTorch works: an example is below where I explain what I've learned about the `DataLoader` and `Dataset` classes as well as my process in loading the FashionMNIST dataset. 
+
+<p align="center">
+    <img src="images/pytorchtutorial.PNG" width="800">
+</p>
+
+I document what I do in markdown cells before I do it in the actual code cells, telling a story of working with this dataset throughout the tutorial.
+
+<p align="center">
+    <img src="images/iteratingvisualizing.PNG" width="800">
+</p>
+
+<p align="center">
+    <img src="images/customdataset.PNG" width="800">
+</p>
+
+The work that I've shown above combined with my efforts described in my midterm reflection show that I've done a lot of work in telling stories with data in an organized fashion. Similar to all the other learning objectives, I consult online documentation (or in the case of the PyTorch tutorial, I am ltierally working off of documentation) or friends to help me solve any problems I encounter. Given that I had no experience at the start of the class with telling stories about data, I have progressed greatly in this learning objective.
+
+* **Total:** 11.8/12
 
 ## Overall Grade
-`(12+12+10.4+11.6)/48=46/48=95.8%`
+`(12+12+10.4+11.8)/48=46.2/48=96.3%`
 
 ## Additional Reflection
 
-* Is the course more or less what you expected before taking it? If not, what is noticeably different from your initial expectations?
+* Suppose you could travel back in time to the start of the term to give your 10-weeks-ago-self some advice for success in this course. What advice would you give yourself? How do you feel you did at adhering to this advice?
 
-The course is quite different than what I expected, though I'm enjoying the current strucutre. For example, I would've imagined more lecture-style lessons on Python for the first few weeks of the class, though I realize that this isn't very efficient since different people in the class have very varying familiarities with Python. I also didn't expect we'd be doing low-level "under the hood" work like in the `Variable` and `LogisticRegression` classes, though I'm really enjoying it and finding it quite interesting, since we get more of an idea of what models are actually doing.
+There's not actually much time in the term to work on your projects! 10 weeks is already a short time, and the first half of the term is dedicated to learning Python, basics of the PyData Stack and machine learning, and working on the gradients project (all of which was a great experience, of course), but this doesn't actually leave much time in the open-ended portion of the course. You should try to choose a project or two that is reasonable to fit into a 3 week period. But also, since the class is so open-ended, definitely pick something you'll truly enjoy working on. Future you picked working on a chess AI, which was really fun to devote time to, even if it didn't turn out particularly successful. 
 
-* What challenges have you faced in dealing with the sometimes daunting amount of material we've been learning? I haven't given you explicit instructions for how to, for example, take notes, save/organize sample code snippets, research additional sources of explanations/examples for topics, or test out your thinking in your own code. How have you been faring in these "being a student" tasks, and how might you improve at them as the course continues?
-
-Time management has been a bit of a challenge as we've had to adjust to the old schedule with 3 class periods per class a week again. It was pretty hard learning all of the aspects of Python that I didn't know before within the first two weeks of class, and especially for this midterm reflection, I've spend multiple long nights working on it. However, I do feel like my Python, pyData stack, Jupyter notebook, and other skills have improved greatly. I have a pretty organized system for saving and organizing my code in my Github repository, I often search up problems I encounter on Google and use resources like blogs or Stack Overflow, and I also talk to my friends in CSC 630 if I need help or want to otherwise discuss the test. I am getting more accustomed to the workflow now and will continue to improve.
-
-* We discussed at the beginning of the term that all of this material is freely available online, and so the only "real" reason we have for doing this work here is (that it's organized into assignments, and) the community of learners around you, and my role as your teacher. How have you leveraged these human resources, for better or worse thus far, and how do you hope to improve upon this as the course continues?
-
-I've been leveraging my resources pretty well: I talk to my friends also in CSC 630 like *Davin Jeong*, *Ali Yang*, *Arnav Bhakta*, and *Michael Huang* to work together on projects or code homework. I also often ask Dr. Z questions during class or conference period. In the future, I hope to meet more of the people in my class and also take on more long-form challenging projects.
-
-* What are your initial thoughts about how you'd like to spend the rest of the term, post Gradients Project? This is highly non-binding, but I just want you to do some brainstorming at this point. Some examples include:
-    * Learning about particular types of machine learning models, such as clustering algorithms, decision trees (and the forests that they aggregate into), support vector machines, or various types of neural networks.
-    * Learning about particular problem spaces, such as image classification, natural language processing, or data modeling from a particular field (medical, financial/economical, educational, ecological [or other scientific], *etc.*).
-    * Learning particular tool sets, like PyTorch/Theano/Tensorflow, Scikit-learn, numpy/linear algebra, *etc.*
-    * Researching and writing on particular ethical issues in the field of AI, informed by your technical knowledge. For example, bias against people of color in data sets translating to machine learning models being biased (or even racist).
-    * Analyzing deeply a particular data set (including possibly one you haven't collected yet).
-
-    Obviously, doing any one of these necessitates doing some of the others as well, but having a focusing idea can really help you have a sense of where you want to take the second half of the term. Which of these feels most important to you?
-
-Many projects! I'm interesting in adversarial machine learning, creating a Tetris bot, maybe creating a Chess engine, analyzing the ethics of potentially racist computer recognition software, computer vision, NLP, and more! I also want to learn how things like PyTorch work.
-
-The things that I will focus on are probably NLP, Tetris, and ethics of computer vision.
+Also, work hard to leverage the resouces around you. This class is a wonderful opportunity to learn a lot of things: you have the potential to transform from someone with very limited experience with Python and machine learning to someone who feels competent in many tools in the field, be it the PyData Stack of `numpy`, `pandas`, `matplotlib.pyplot`, etc. or PyTorch!
