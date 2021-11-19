@@ -207,7 +207,7 @@ Note that at the bottom of the tree, the search calls the `predict_model` functi
 Finally, I also tested out many different hyperparameters for the model: its size, the learning rate, the number of epochs, as well as figuring out what dataset to train it on for the best results. I noticed that `random_evals.csv` was very necessary for the model to learn what moves are really terrible, and that a 8x64 model does comparably to a 10x128 model, but reducing the size to 6x50 caused a large drop in performance. I also made some nice plots of the training and test (actually, validation) losses during training:
 
 <p align="center">
-    <img src="images/loss_plot_111621.PNG" width="600">
+    <img src="images/loss_plot_111621.png" width="600">
 </p>
 
 Overall, I've done a ton of work in this Chess AI project, and combined with my previous work described in my [Midterm Reflection](https://github.com/willwin4sure/CSC_630_Machine_Learning/blob/main/Reflections/midterm_reflection.md), I've definitely excelled in volume of work, organization, and documentation. In addition, I often ask the people around me for help: *Ali Yang* was greatly helpful in helping me with PyTorch, and I consulted *Michael Huang* with some questions about the neural network architectures, in particular where I should put the skip connections. And of course, I worked closely on and discussed with *Davin Jeong* the alpha-beta pruning tree search part of the algorithm, and we've been working on converting the model into C++.
